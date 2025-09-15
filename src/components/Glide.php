@@ -36,6 +36,7 @@ use yii\base\Component;
 use yii\base\InvalidConfigException;
 use yii\helpers\ArrayHelper;
 use League\Glide\Responses\ResponseFactoryInterface;
+use League\Glide\ServerFactory; // added: use ServerFactory for Glide v3
 
 /**
  * @author Eugene Terentev <eugene@terentev.net>
@@ -175,24 +176,28 @@ class Glide extends Component
     public function getServer()
     {
         if (!$this->server) {
-            $server = new Server(
-                $this->getSource(),
-                $this->getCache(),
-                $this->getApi()
-            );
+            // Glide v3: use ServerFactory to create a configured server instance.
+            $config = [
+                'source' => $this->getSource(),
+                'cache' => $this->getCache(),
+                'watermarks' => $this->getWatermarks(),
+                'source_path_prefix' => $this->sourcePathPrefix,
+                'cache_path_prefix' => $this->cachePathPrefix,
+                'group_cache_in_folders' => $this->groupCacheInFolders,
+                'defaults' => $this->defaults,
+                'presets' => $this->presets,
+                'base_url' => $this->baseUrl,
+                'response' => $this->responseFactory,
+            ];
 
-            $server->setSourcePathPrefix($this->sourcePathPrefix);
-            $server->setCachePathPrefix($this->cachePathPrefix);
-            $server->setGroupCacheInFolders($this->groupCacheInFolders);
-            $server->setDefaults($this->defaults);
-            $server->setPresets($this->presets);
-            $server->setBaseUrl($this->baseUrl);
-            $server->setResponseFactory($this->responseFactory);
+            if ($this->maxImageSize) {
+                $config['max_image_size'] = $this->maxImageSize;
+            }
 
-            $this->server = $server;
-        }
+            $this->server = ServerFactory::create($config);
+         }
 
-        return $this->server;
+         return $this->server;
     }
 
     /**
